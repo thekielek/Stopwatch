@@ -1,72 +1,90 @@
 // // http://websamuraj.pl/examples/js/projekt11/
 
-const btnTime = document.querySelector('.main')
-const btnReset = document.querySelector('.reset')
-const panel = document.querySelector('.time div')
-const btnLap = document.querySelector('.lap')
-const lapList = document.querySelector(".lapList");
-const btnResetLap = document.querySelector(".resetLap");
+const btnTime = document.querySelector('.main');
+const btnReset = document.querySelector('.reset');
+const panel = document.querySelector('.timeplace');
+const btnLap = document.querySelector('.lap');
+const lapList = document.querySelector('.lapList');
+const btnResetLap = document.querySelector('.resetLap');
 
-let stop;
-let seconds = 0;
+let intervalId = null;
+let startTimestamp = 0;
+let elapsedMs = 0;
 
-const startTimer = () => {
-    seconds++;
-    panel.textContent = (seconds / 100).toFixed(2);
-}
+const formatTime = (ms) => {
+    const centiseconds = Math.floor((ms % 1000) / 10);
+    const totalSeconds = Math.floor(ms / 1000);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60);
+
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+};
+
+const updateTimerDisplay = () => {
+    const currentElapsed = elapsedMs + (Date.now() - startTimestamp);
+    panel.textContent = formatTime(currentElapsed);
+};
 
 const start = () => {
-    let classesTime = btnTime.classList;
-    let result = classesTime.contains('main');
+    const isStopped = btnTime.classList.contains('main');
 
-    if (result) {
+    if (isStopped) {
         btnTime.classList.remove('main');
         btnTime.classList.add('pause');
-        btnTime.textContent = "Pause";
-        stop = setInterval(startTimer, 10)
+        btnTime.textContent = 'Pause';
 
-    } else {
-        btnTime.classList.remove('pause');
-        btnTime.classList.add('main');
-        btnTime.textContent = "Start";
-        clearInterval(stop)
-
+        startTimestamp = Date.now();
+        intervalId = setInterval(updateTimerDisplay, 10);
+        return;
     }
-}
+
+    btnTime.classList.remove('pause');
+    btnTime.classList.add('main');
+    btnTime.textContent = 'Start';
+
+    clearInterval(intervalId);
+    intervalId = null;
+    elapsedMs += Date.now() - startTimestamp;
+};
 
 const reset = () => {
+    clearInterval(intervalId);
+    intervalId = null;
 
+    elapsedMs = 0;
+    startTimestamp = 0;
 
-    if (btnReset.className === 'reset') {
-        btnTime.classList.add('main');
-        btnTime.textContent = "Start";
-        panel.textContent = "---"
-        clearInterval(stop);
-        seconds = 0;
-    }
-}
+    btnTime.classList.remove('pause');
+    btnTime.classList.add('main');
+    btnTime.textContent = 'Start';
+
+    panel.textContent = '00:00.00';
+    lapList.innerHTML = '';
+};
 
 const lapRound = () => {
+    const isRunning = btnTime.classList.contains('pause');
+    if (!isRunning) {
+        return;
+    }
 
     const li = document.createElement('li');
-    li.textContent = seconds / 100;
-    lapList.appendChild(li);
-    seconds = 0;
+    const currentElapsed = elapsedMs + (Date.now() - startTimestamp);
 
-    if (panel.textContent <= 2) {
+    li.textContent = formatTime(currentElapsed);
+
+    if (currentElapsed <= 2000) {
         li.classList.add('green');
-        li.textContent = `${panel.textContent}`
     }
-}
 
-
+    lapList.appendChild(li);
+};
 
 const resetLap = () => {
-    const liOne = document.querySelector('li');
-    liOne.remove();
+    lapList.innerHTML = '';
+};
 
-
-}
+panel.textContent = '00:00.00';
 
 btnTime.addEventListener('click', start);
 btnReset.addEventListener('click', reset);
